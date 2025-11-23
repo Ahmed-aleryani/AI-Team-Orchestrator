@@ -2640,8 +2640,9 @@ def _calculate_goal_urgency(goal: Dict[str, Any], completion_pct: float) -> floa
                 time_urgency = 2.0  # Urgent
             elif days_left <= 30:
                 time_urgency = 1.5  # Moderately urgent
-        except:
-            pass
+        except (ValueError, TypeError, KeyError) as e:
+            # Date parsing failed - use default time_urgency
+            logger.debug(f"Could not parse target_date for urgency calculation: {e}")
     
     return base_urgency * priority_multiplier * time_urgency
 

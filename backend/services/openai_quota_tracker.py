@@ -106,9 +106,9 @@ class WorkspaceQuotaTracker:
             try:
                 await ws.send_text(message)
                 active_websockets.append(ws)
-            except:
-                # WebSocket is disconnected, skip it
-                pass
+            except (ConnectionError, RuntimeError, Exception) as e:
+                # WebSocket is disconnected or in invalid state, skip it
+                logger.debug(f"WebSocket disconnected during broadcast: {type(e).__name__}")
         
         self.connected_websockets = active_websockets
         logger.info(f"📡 Broadcasted quota update to {len(active_websockets)} clients")
