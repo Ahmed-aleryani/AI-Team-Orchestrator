@@ -5652,6 +5652,23 @@ def get_executor_stats() -> Dict[str, Any]:
     """Ottieni statistiche dell'executor"""
     return task_executor.get_detailed_stats()
 
+
+def get_executor_status() -> Dict[str, Any]:
+    """Get basic executor status for health checks"""
+    try:
+        return {
+            "is_running": task_executor.running,
+            "pending_tasks": len(getattr(task_executor, 'pending_task_queue', [])),
+            "active_workspace_count": len(getattr(task_executor, 'active_workspaces', set())),
+            "max_concurrent_tasks": getattr(task_executor, 'max_concurrent_tasks', 5)
+        }
+    except Exception as e:
+        logger.debug(f"Error getting executor status: {e}")
+        return {
+            "is_running": False,
+            "error": str(e)
+        }
+
 def get_recent_executor_activity(workspace_id: Optional[str] = None, limit: int = 50) -> List[Dict[str, Any]]:
     """Ottieni attività recente dell'executor"""
     return task_executor.get_recent_activity(workspace_id=workspace_id, limit=limit)

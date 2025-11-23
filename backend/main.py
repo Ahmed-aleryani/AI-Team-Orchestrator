@@ -64,6 +64,7 @@ from routes.system_monitoring import router as system_monitoring_router
 from routes.service_registry import router as service_registry_router, registry_router as service_registry_compat_router
 from routes.component_health import router as component_health_router, health_router as component_health_compat_router
 from routes.debug import router as debug_router
+from routes.health import router as comprehensive_health_router
 
 # Recovery system routes
 from routes.recovery_explanations import router as recovery_explanations_router
@@ -421,6 +422,10 @@ app.include_router(usage_router)
 
 # All routers now use consistent /api prefix - compatibility layer removed
 app.include_router(debug_router)
+
+# Comprehensive health check routes with Kubernetes-style probes
+# Provides: /api/health, /api/health/live, /api/health/ready, /api/health/detailed
+app.include_router(comprehensive_health_router)
 
 # Health check endpoint
 # Root endpoint
