@@ -52,6 +52,9 @@ export function useConversationalWorkspace(workspaceId: string, initialChatId?: 
 
   // 🚨 CRITICAL FIX: Memoized cache to prevent infinite loop
   const businessValueCache = useRef(new Map<string, number>())
+  // 🛡️ INFINITE LOOP FIX: Track extraction in progress to prevent re-entry
+  const extractionInProgress = useRef(new Map<string, boolean>())
+  const extractionResults = useRef(new Map<string, any>())
   
   // 🤖 AI-DRIVEN: Semantic Business Value Scoring Function - replaces hardcoded logic
   const calculateTaskBusinessValueScore = useCallback(async (task: any, goalData: any): Promise<number> => {
@@ -123,6 +126,24 @@ export function useConversationalWorkspace(workspaceId: string, initialChatId?: 
 
   // 🎯 ENHANCED: Business Value-Aware Content Extraction with Rate Limiting
   const extractBusinessContentFromTasks = useCallback(async (completedTasks: any[], goalData: any) => {
+    // 🛡️ INFINITE LOOP FIX: Generate unique key for this extraction
+    const extractionKey = `${goalData?.id || 'unknown'}-${completedTasks.length}`
+
+    // 🛡️ INFINITE LOOP FIX: Check if extraction is already in progress
+    if (extractionInProgress.current.get(extractionKey)) {
+      console.log('🛑 [extractBusinessContentFromTasks] Extraction already in progress, returning cached result')
+      return extractionResults.current.get(extractionKey) || null
+    }
+
+    // 🛡️ INFINITE LOOP FIX: Check if we already have a result for this key
+    if (extractionResults.current.has(extractionKey)) {
+      console.log('✅ [extractBusinessContentFromTasks] Returning cached extraction result')
+      return extractionResults.current.get(extractionKey)
+    }
+
+    // Mark extraction as in progress
+    extractionInProgress.current.set(extractionKey, true)
+
     try {
       // 🛡️ BATCH LIMITER: Process tasks in small batches to prevent API overload
       const BATCH_SIZE = 5
@@ -303,10 +324,17 @@ export function useConversationalWorkspace(workspaceId: string, initialChatId?: 
       }
       
       console.log('✅ [extractBusinessContentFromTasks] Generated business document with', sections.length, 'sections')
+
+      // 🛡️ INFINITE LOOP FIX: Cache the result and clear in-progress flag
+      extractionResults.current.set(extractionKey, businessDocument)
+      extractionInProgress.current.set(extractionKey, false)
+
       return businessDocument
-      
+
     } catch (error) {
       console.error('❌ [extractBusinessContentFromTasks] Error:', error)
+      // 🛡️ INFINITE LOOP FIX: Clear in-progress flag even on error
+      extractionInProgress.current.set(extractionKey, false)
       return null
     }
   }, [])
@@ -1737,11 +1765,12 @@ export function useConversationalWorkspace(workspaceId: string, initialChatId?: 
                 console.log(`🤖 [AI-Driven] Processing ${goalSpecificTasks.length} completed tasks for goal: "${goalDescription}"`)
                 console.log('📊 [Legacy Data] Using all workspace tasks - new workspaces will have proper goal→task relationships')
                 
-                // 🚨 TEMPORARY FIX: Disable AI analysis to stop infinite loop
-                // TODO: Re-enable after fixing the loop trigger
-                // const goalSpecificBusinessContent = await extractBusinessContentFromTasks(goalSpecificTasks, fullGoalData)
-                const goalSpecificBusinessContent = null
-                console.log('🚨 TEMPORARY: Disabled business content extraction to fix infinite loop')
+                // 🛡️ FIXED: Re-enabled with infinite loop prevention via caching
+                // The extractBusinessContentFromTasks function now has:
+                // - In-progress tracking to prevent re-entry
+                // - Result caching to return cached results on subsequent calls
+                const goalSpecificBusinessContent = await extractBusinessContentFromTasks(goalSpecificTasks, fullGoalData)
+                console.log('✅ [Business Content] Extraction completed with loop prevention guards')
                 
                 // 🎯 PRIORITY FIX: Use actual deliverables from database first
                 if (allDeliverables && allDeliverables.length > 0) {
