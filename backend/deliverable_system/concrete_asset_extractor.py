@@ -6,6 +6,7 @@ Extracts concrete assets (code, JSON, documents) from task outputs
 import re
 import json
 import logging
+import os
 from typing import Dict, List, Any, Optional, Tuple
 from datetime import datetime
 import asyncio
@@ -13,6 +14,10 @@ import asyncio
 from services.ai_provider_abstraction import ai_provider_manager
 
 logger = logging.getLogger(__name__)
+
+# Configurable quality threshold - FIXED: Was hardcoded at 0.1 (accepting 90% failure rate)
+# Default to 0.6 for reasonable quality, configurable via environment
+ASSET_QUALITY_THRESHOLD = float(os.getenv('ASSET_QUALITY_THRESHOLD', '0.6'))
 
 class ConcreteAssetExtractor:
     """
@@ -318,10 +323,10 @@ Return as JSON object with "assets" array. Focus on CONCRETE, SPECIFIC content -
             # Calculate quality score (AI-driven)
             asset['quality_score'] = await self._calculate_asset_quality(asset)
             
-            # Only include high-quality assets - FIXED: Lower threshold
-            if asset['quality_score'] >= 0.1:  # Lowered from 0.6 to 0.5, then to 0.1
+            # Only include high-quality assets - FIXED: Use configurable threshold
+            if asset['quality_score'] >= ASSET_QUALITY_THRESHOLD:
                 validated.append(asset)
-                logger.debug(f"✅ Accepted asset '{asset.get('asset_name', 'unknown')}' with quality {asset['quality_score']:.2f}")
+                logger.debug(f"✅ Accepted asset '{asset.get('asset_name', 'unknown')}' with quality {asset['quality_score']:.2f} (threshold: {ASSET_QUALITY_THRESHOLD})")
             else:
                 logger.debug(f"❌ Rejected asset '{asset.get('asset_name', 'unknown')}' with quality {asset['quality_score']:.2f}")
         

@@ -1,5 +1,8 @@
 import { useState, useEffect, useCallback } from 'react'
 
+// 🔧 FIXED: Centralized API base URL - no more hardcoded localhost
+const getApiBaseUrl = () => process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+
 interface DeliverableStatus {
   id: string
   name: string
@@ -38,7 +41,7 @@ export const useDeliverableMonitoring = (workspaceId: string, refreshInterval: n
     try {
       console.log('🔍 [DeliverableMonitoring] Fetching deliverables for workspace:', workspaceId)
       
-      const response = await fetch(`http://localhost:8000/deliverables/workspace/${workspaceId}`)
+      const response = await fetch(`${getApiBaseUrl()}/deliverables/workspace/${workspaceId}`)
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`)
       }

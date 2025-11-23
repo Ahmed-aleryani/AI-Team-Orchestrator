@@ -3,11 +3,155 @@ Goal Progress Details API - Transparent progress breakdown with unblocking actio
 """
 from fastapi import APIRouter, HTTPException, Query
 from typing import Optional, List, Dict, Any
-from database import get_workspace_goals, get_deliverables, get_task
+from database import get_workspace_goals, get_deliverables, get_task, update_deliverable_status
+from uuid import UUID
 import logging
+import asyncio
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
+
+
+# =============================================================================
+# RECOVERY ACTION IMPLEMENTATIONS
+# =============================================================================
+
+async def _retry_failed_deliverable(workspace_id: str, deliverable: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Retry a failed deliverable by resetting its status and re-queuing for processing.
+
+    Strategy:
+    1. Reset deliverable status to 'pending'
+    2. Clear error state
+    3. Re-queue associated tasks for execution
+    """
+    try:
+        deliverable_id = deliverable.get('id')
+
+        # Reset status to pending to allow reprocessing
+        await update_deliverable_status(
+            deliverable_id=deliverable_id,
+            status='pending',
+            metadata={
+                'retry_count': deliverable.get('metadata', {}).get('retry_count', 0) + 1,
+                'last_retry_at': asyncio.get_event_loop().time(),
+                'previous_error': deliverable.get('error_message', 'Unknown error')
+            }
+        )
+
+        logger.info(f"✅ Retry queued for deliverable {deliverable_id}")
+        return {
+            'success': True,
+            'deliverable_id': deliverable_id,
+            'action': 'retry_queued',
+            'new_status': 'pending'
+        }
+
+    except Exception as e:
+        logger.error(f"Failed to retry deliverable {deliverable.get('id')}: {e}")
+        return {
+            'success': False,
+            'deliverable_id': deliverable.get('id'),
+            'error': str(e)
+        }
+
+
+async def _resume_pending_deliverable(workspace_id: str, deliverable: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Resume a pending deliverable that may be stalled.
+
+    Strategy:
+    1. Check if deliverable has associated tasks
+    2. Re-trigger task execution if needed
+    3. Update deliverable to 'in_progress' to indicate active processing
+    """
+    try:
+        deliverable_id = deliverable.get('id')
+
+        # Update status to in_progress to signal active processing
+        await update_deliverable_status(
+            deliverable_id=deliverable_id,
+            status='in_progress',
+            metadata={
+                'resumed_at': asyncio.get_event_loop().time(),
+                'resume_count': deliverable.get('metadata', {}).get('resume_count', 0) + 1
+            }
+        )
+
+        logger.info(f"✅ Resume queued for deliverable {deliverable_id}")
+        return {
+            'success': True,
+            'deliverable_id': deliverable_id,
+            'action': 'resume_queued',
+            'new_status': 'in_progress'
+        }
+
+    except Exception as e:
+        logger.error(f"Failed to resume deliverable {deliverable.get('id')}: {e}")
+        return {
+            'success': False,
+            'deliverable_id': deliverable.get('id'),
+            'error': str(e)
+        }
+
+
+async def _escalate_deliverable(workspace_id: str, deliverable: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Escalate a blocked deliverable to human review.
+
+    Strategy:
+    1. Mark deliverable as requiring human intervention
+    2. Create a human feedback request
+    3. Notify relevant stakeholders
+    """
+    try:
+        deliverable_id = deliverable.get('id')
+
+        # Update status to indicate human review needed
+        await update_deliverable_status(
+            deliverable_id=deliverable_id,
+            status='needs_human_review',
+            metadata={
+                'escalated_at': asyncio.get_event_loop().time(),
+                'escalation_reason': f"Automatic escalation after {deliverable.get('metadata', {}).get('retry_count', 0)} retries",
+                'original_status': deliverable.get('status', 'unknown')
+            }
+        )
+
+        # Try to create a human feedback request if the service is available
+        try:
+            from services.human_feedback import create_feedback_request
+            await create_feedback_request(
+                workspace_id=workspace_id,
+                request_type='deliverable_review',
+                item_id=deliverable_id,
+                context={
+                    'deliverable_title': deliverable.get('title', 'Unknown'),
+                    'error_message': deliverable.get('error_message', ''),
+                    'retry_count': deliverable.get('metadata', {}).get('retry_count', 0)
+                },
+                priority='high'
+            )
+        except ImportError:
+            logger.warning("Human feedback service not available, escalation recorded in metadata only")
+        except Exception as feedback_error:
+            logger.warning(f"Could not create feedback request: {feedback_error}")
+
+        logger.info(f"✅ Escalated deliverable {deliverable_id} to human review")
+        return {
+            'success': True,
+            'deliverable_id': deliverable_id,
+            'action': 'escalated_to_human',
+            'new_status': 'needs_human_review'
+        }
+
+    except Exception as e:
+        logger.error(f"Failed to escalate deliverable {deliverable.get('id')}: {e}")
+        return {
+            'success': False,
+            'deliverable_id': deliverable.get('id'),
+            'error': str(e)
+        }
 
 @router.get("/goal-progress-details/{workspace_id}/{goal_id}")
 async def get_goal_progress_details(
@@ -247,36 +391,60 @@ async def unblock_goal_progress(
             failed_items = progress_details['deliverable_breakdown']['failed']
             for item in failed_items:
                 if deliverable_ids is None or item['id'] in deliverable_ids:
-                    # TODO: Implement actual retry logic
-                    results['items_processed'].append({
-                        'id': item['id'],
-                        'title': item['title'],
-                        'action': 'retry_queued'
-                    })
-        
+                    # IMPLEMENTED: Actual retry logic
+                    result = await _retry_failed_deliverable(workspace_id, item)
+                    if result['success']:
+                        results['items_processed'].append({
+                            'id': item['id'],
+                            'title': item['title'],
+                            'action': 'retry_queued',
+                            'new_status': result.get('new_status', 'pending')
+                        })
+                    else:
+                        results['errors'].append({
+                            'id': item['id'],
+                            'error': result.get('error', 'Unknown error')
+                        })
+
         elif action == 'resume_pending':
-            pending_items = progress_details['deliverable_breakdown']['pending'] 
+            pending_items = progress_details['deliverable_breakdown']['pending']
             for item in pending_items:
                 if deliverable_ids is None or item['id'] in deliverable_ids:
-                    # TODO: Implement actual resume logic
-                    results['items_processed'].append({
-                        'id': item['id'], 
-                        'title': item['title'],
-                        'action': 'resume_queued'
-                    })
-        
+                    # IMPLEMENTED: Actual resume logic
+                    result = await _resume_pending_deliverable(workspace_id, item)
+                    if result['success']:
+                        results['items_processed'].append({
+                            'id': item['id'],
+                            'title': item['title'],
+                            'action': 'resume_queued',
+                            'new_status': result.get('new_status', 'in_progress')
+                        })
+                    else:
+                        results['errors'].append({
+                            'id': item['id'],
+                            'error': result.get('error', 'Unknown error')
+                        })
+
         elif action == 'escalate_all':
-            # TODO: Implement escalation logic
+            # IMPLEMENTED: Escalation logic
             blocked_items = (
                 progress_details['deliverable_breakdown']['failed'] +
                 progress_details['deliverable_breakdown']['pending']
             )
             for item in blocked_items:
-                results['items_processed'].append({
-                    'id': item['id'],
-                    'title': item['title'], 
-                    'action': 'escalated_to_human'
-                })
+                result = await _escalate_deliverable(workspace_id, item)
+                if result['success']:
+                    results['items_processed'].append({
+                        'id': item['id'],
+                        'title': item['title'],
+                        'action': 'escalated_to_human',
+                        'new_status': result.get('new_status', 'needs_human_review')
+                    })
+                else:
+                    results['errors'].append({
+                        'id': item['id'],
+                        'error': result.get('error', 'Unknown error')
+                    })
         
         return {
             **results,

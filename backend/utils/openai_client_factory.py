@@ -5,13 +5,22 @@ Ensures all OpenAI clients throughout the system use quota tracking
 CRITICAL: This factory MUST be used for ALL OpenAI client instantiations to ensure
 proper quota tracking. Direct OpenAI() or AsyncOpenAI() instantiation bypasses
 quota tracking and is the root cause of the 0/10000 tracking issue.
+
+ENHANCED: Now includes retry logic with exponential backoff for rate limit errors.
 """
 
 import os
 import logging
 from typing import Optional
-from openai import OpenAI, AsyncOpenAI
+from openai import OpenAI, AsyncOpenAI, RateLimitError, APIError, APIConnectionError
 from functools import wraps
+from tenacity import (
+    retry,
+    stop_after_attempt,
+    wait_exponential,
+    retry_if_exception_type,
+    before_sleep_log
+)
 
 # Import quota tracker for real API monitoring
 from services.openai_quota_tracker import quota_tracker
@@ -19,6 +28,15 @@ from services.openai_quota_tracker import quota_tracker
 from utils.ai_model_optimizer import get_cost_optimized_model, ai_model_optimizer
 
 logger = logging.getLogger(__name__)
+
+# Retry configuration - exponential backoff for transient errors
+RETRY_CONFIG = {
+    "stop": stop_after_attempt(3),
+    "wait": wait_exponential(multiplier=1, min=2, max=60),
+    "retry": retry_if_exception_type((RateLimitError, APIConnectionError)),
+    "before_sleep": before_sleep_log(logger, logging.WARNING),
+    "reraise": True
+}
 
 # Singleton instances to avoid creating multiple clients
 _sync_client: Optional[OpenAI] = None
@@ -39,8 +57,13 @@ class QuotaTrackedOpenAI(OpenAI):
         logger.info("📊 QuotaTrackedOpenAI initialized - ALL calls will be tracked")
     
     def _wrap_methods(self):
-        """Wrap OpenAI methods with quota tracking"""
-        # Wrap standard chat completions
+        """Wrap OpenAI methods with quota tracking and retry logic"""
+
+        # Create retry decorator for sync methods
+        sync_retry = retry(**RETRY_CONFIG)
+
+        # Wrap standard chat completions with retry
+        @sync_retry
         def tracked_chat_create(*args, **kwargs):
             try:
                 result = self._original_chat_completions_create(*args, **kwargs)
@@ -51,13 +74,23 @@ class QuotaTrackedOpenAI(OpenAI):
                 quota_tracker.record_request(success=True, tokens_used=tokens_used)
                 logger.debug(f"✅ QUOTA TRACKED: Sync chat completion - {tokens_used} tokens")
                 return result
+            except RateLimitError as e:
+                # Log rate limit specifically for retry visibility
+                logger.warning(f"⏳ Rate limited, will retry: {e}")
+                quota_tracker.record_openai_error("RateLimitError", str(e))
+                raise  # Let tenacity handle the retry
+            except APIConnectionError as e:
+                logger.warning(f"🔌 Connection error, will retry: {e}")
+                quota_tracker.record_openai_error("APIConnectionError", str(e))
+                raise  # Let tenacity handle the retry
             except Exception as e:
-                # Record failed request
+                # Record failed request for other errors (no retry)
                 quota_tracker.record_openai_error(str(type(e).__name__), str(e))
                 logger.error(f"❌ QUOTA TRACKED: Sync chat completion error: {e}")
                 raise
-        
-        # Wrap beta parse (structured outputs)
+
+        # Wrap beta parse (structured outputs) with retry
+        @sync_retry
         def tracked_beta_parse(*args, **kwargs):
             try:
                 result = self._original_beta_chat_completions_parse(*args, **kwargs)
@@ -68,12 +101,20 @@ class QuotaTrackedOpenAI(OpenAI):
                 quota_tracker.record_request(success=True, tokens_used=tokens_used)
                 logger.debug(f"✅ QUOTA TRACKED: Sync beta parse - {tokens_used} tokens")
                 return result
+            except RateLimitError as e:
+                logger.warning(f"⏳ Rate limited, will retry: {e}")
+                quota_tracker.record_openai_error("RateLimitError", str(e))
+                raise
+            except APIConnectionError as e:
+                logger.warning(f"🔌 Connection error, will retry: {e}")
+                quota_tracker.record_openai_error("APIConnectionError", str(e))
+                raise
             except Exception as e:
-                # Record failed request
+                # Record failed request for other errors (no retry)
                 quota_tracker.record_openai_error(str(type(e).__name__), str(e))
                 logger.error(f"❌ QUOTA TRACKED: Sync beta parse error: {e}")
                 raise
-        
+
         self.chat.completions.create = tracked_chat_create
         self.beta.chat.completions.parse = tracked_beta_parse
 
@@ -92,8 +133,13 @@ class QuotaTrackedAsyncOpenAI(AsyncOpenAI):
         logger.info("📊 QuotaTrackedAsyncOpenAI initialized - ALL async calls will be tracked")
     
     def _wrap_methods(self):
-        """Wrap AsyncOpenAI methods with quota tracking"""
-        # Wrap async chat completions
+        """Wrap AsyncOpenAI methods with quota tracking and retry logic"""
+
+        # Create async-compatible retry decorator
+        async_retry = retry(**RETRY_CONFIG)
+
+        # Wrap async chat completions with retry
+        @async_retry
         @wraps(self._original_chat_completions_create)
         async def tracked_async_chat_create(*args, **kwargs):
             try:
@@ -105,13 +151,22 @@ class QuotaTrackedAsyncOpenAI(AsyncOpenAI):
                 quota_tracker.record_request(success=True, tokens_used=tokens_used)
                 logger.debug(f"✅ QUOTA TRACKED: Async chat completion - {tokens_used} tokens")
                 return result
+            except RateLimitError as e:
+                logger.warning(f"⏳ Rate limited (async), will retry: {e}")
+                quota_tracker.record_openai_error("RateLimitError", str(e))
+                raise  # Let tenacity handle the retry
+            except APIConnectionError as e:
+                logger.warning(f"🔌 Connection error (async), will retry: {e}")
+                quota_tracker.record_openai_error("APIConnectionError", str(e))
+                raise  # Let tenacity handle the retry
             except Exception as e:
-                # Record failed request
+                # Record failed request for other errors (no retry)
                 quota_tracker.record_openai_error(str(type(e).__name__), str(e))
                 logger.error(f"❌ QUOTA TRACKED: Async chat completion error: {e}")
                 raise
-        
-        # Wrap async beta parse (structured outputs)
+
+        # Wrap async beta parse (structured outputs) with retry
+        @async_retry
         @wraps(self._original_beta_chat_completions_parse)
         async def tracked_async_beta_parse(*args, **kwargs):
             try:
@@ -123,12 +178,20 @@ class QuotaTrackedAsyncOpenAI(AsyncOpenAI):
                 quota_tracker.record_request(success=True, tokens_used=tokens_used)
                 logger.debug(f"✅ QUOTA TRACKED: Async beta parse - {tokens_used} tokens")
                 return result
+            except RateLimitError as e:
+                logger.warning(f"⏳ Rate limited (async), will retry: {e}")
+                quota_tracker.record_openai_error("RateLimitError", str(e))
+                raise
+            except APIConnectionError as e:
+                logger.warning(f"🔌 Connection error (async), will retry: {e}")
+                quota_tracker.record_openai_error("APIConnectionError", str(e))
+                raise
             except Exception as e:
-                # Record failed request
+                # Record failed request for other errors (no retry)
                 quota_tracker.record_openai_error(str(type(e).__name__), str(e))
                 logger.error(f"❌ QUOTA TRACKED: Async beta parse error: {e}")
                 raise
-        
+
         self.chat.completions.create = tracked_async_chat_create
         self.beta.chat.completions.parse = tracked_async_beta_parse
 

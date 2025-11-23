@@ -3,6 +3,10 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 
+// 🔧 FIXED: Centralized API base URL - no more hardcoded localhost
+const getApiBaseUrl = () => process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+const getWsBaseUrl = () => getApiBaseUrl().replace(/^http/, 'ws')
+
 interface TaskStatus {
   id: string
   name: string
@@ -58,7 +62,7 @@ export const useWebSocketTaskStatus = ({
     }
 
     try {
-      const wsUrl = `ws://localhost:8000/ws/${workspaceId}`
+      const wsUrl = `${getWsBaseUrl()}/ws/${workspaceId}`
       addLog(`🔌 Connecting to WebSocket: ${wsUrl}`)
       
       wsRef.current = new WebSocket(wsUrl)

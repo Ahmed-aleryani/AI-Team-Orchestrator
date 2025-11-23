@@ -3,6 +3,10 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 
+// 🔧 FIXED: Centralized API base URL - no more hardcoded localhost
+const getApiBaseUrl = () => process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+const getWsBaseUrl = () => getApiBaseUrl().replace(/^http/, 'ws')
+
 interface WorkspaceUpdate {
   type: 'task_update' | 'agent_update' | 'deliverable_update' | 'general_update' | 'thinking_step' | 'goal_decomposition_start' | 'goal_decomposition_complete' | 'goal_progress_update'
   data: any
@@ -54,7 +58,7 @@ export const useWorkspaceWebSocket = ({
       const controller = new AbortController()
       const timeoutId = setTimeout(() => controller.abort(), 10000) // 10 second timeout
       
-      const response = await fetch('http://localhost:8000/health', { 
+      const response = await fetch(`${getApiBaseUrl()}/health`, {
         method: 'GET',
         signal: controller.signal
       })
@@ -86,7 +90,7 @@ export const useWorkspaceWebSocket = ({
     }
 
     try {
-      const wsUrl = `ws://localhost:8000/ws/${workspaceId}`
+      const wsUrl = `${getWsBaseUrl()}/ws/${workspaceId}`
       console.log(`Attempting WebSocket connection to: ${wsUrl}`)
       wsRef.current = new WebSocket(wsUrl)
 

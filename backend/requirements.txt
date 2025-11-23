@@ -12,6 +12,7 @@ openai==1.97.0
 openai-agents==0.2.3
 anyio>=4.6,<5
 supabase==2.12.0
+tenacity>=8.2.0                   # Retry logic with exponential backoff for API calls
 
 # Asset-Driven System Dependencies
 psutil>=5.9.0                     # System resource monitoring for performance optimization

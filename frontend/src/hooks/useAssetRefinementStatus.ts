@@ -3,6 +3,9 @@
 
 import { useState, useEffect, useCallback } from 'react';
 
+// 🔧 FIXED: Centralized API base URL - no more hardcoded localhost
+const getApiBaseUrl = () => process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+
 interface EnhancementTask {
   id: string;
   name: string;
@@ -49,7 +52,7 @@ export const useAssetRefinementStatus = (workspaceId: string, assetName?: string
       setStatus(prev => ({ ...prev, isLoading: true, error: null }));
 
       // Fetch all enhancement tasks for the workspace
-      const response = await fetch(`http://localhost:8000/api/workspaces/${workspaceId}/tasks?task_type=asset_enhancement`);
+      const response = await fetch(`${getApiBaseUrl()}/api/workspaces/${workspaceId}/tasks?task_type=asset_enhancement`);
       
       if (!response.ok) {
         throw new Error(`Failed to fetch enhancement tasks: ${response.statusText}`);

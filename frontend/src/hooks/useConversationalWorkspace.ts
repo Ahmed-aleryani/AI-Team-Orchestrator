@@ -1,14 +1,21 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { api } from '@/utils/api'
 import { generateArtifactId, generateMessageId, validateUniqueIds } from '@/utils/uniqueId'
-import { 
-  ConversationMessage, 
-  Chat, 
-  DeliverableArtifact, 
-  TeamActivity, 
+import {
+  ConversationMessage,
+  Chat,
+  DeliverableArtifact,
+  TeamActivity,
   WorkspaceContext,
-  AIResponse 
+  AIResponse
 } from '@/components/conversational/types'
+
+// 🔧 FIXED: Centralized API base URL - no more hardcoded localhost
+const getApiBaseUrl = () => process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+const getWsBaseUrl = () => {
+  const apiUrl = getApiBaseUrl()
+  return apiUrl.replace(/^http/, 'ws')
+}
 
 export function useConversationalWorkspace(workspaceId: string, initialChatId?: string) {
   // 🎯 ARCHITECTURAL FIX: Stable navigation state to prevent re-initialization
@@ -321,7 +328,7 @@ export function useConversationalWorkspace(workspaceId: string, initialChatId?: 
       
       // Test simple backend connection first
       try {
-        const testResponse = await fetch('http://localhost:8000/')
+        const testResponse = await fetch(`${getApiBaseUrl()}/`)
         const testData = await testResponse.json()
         console.log('🟢 [ConversationalWorkspace] Backend connection test:', testData)
       } catch (error) {
@@ -910,7 +917,7 @@ export function useConversationalWorkspace(workspaceId: string, initialChatId?: 
         messageId
       })
 
-      const response = await fetch(`http://localhost:8000/api/conversation/workspaces/${workspaceContext.id}/chat/thinking`, {
+      const response = await fetch(`${getApiBaseUrl()}/api/conversation/workspaces/${workspaceContext.id}/chat/thinking`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1177,7 +1184,7 @@ export function useConversationalWorkspace(workspaceId: string, initialChatId?: 
     if (chatId.startsWith('goal-')) {
       try {
         const goalId = chatId.replace('goal-', '')
-        const response = await fetch(`http://localhost:8000/api/workspaces/${workspaceId}/goals/${goalId}`, {
+        const response = await fetch(`${getApiBaseUrl()}/api/workspaces/${workspaceId}/goals/${goalId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ status: 'active' })
@@ -1209,7 +1216,7 @@ export function useConversationalWorkspace(workspaceId: string, initialChatId?: 
     if (chatId.startsWith('goal-')) {
       try {
         const goalId = chatId.replace('goal-', '')
-        const response = await fetch(`http://localhost:8000/api/workspaces/${workspaceId}/goals/${goalId}`, {
+        const response = await fetch(`${getApiBaseUrl()}/api/workspaces/${workspaceId}/goals/${goalId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
@@ -1367,7 +1374,7 @@ export function useConversationalWorkspace(workspaceId: string, initialChatId?: 
         case 'feedback-requests':
           // Load feedback-specific artifacts using same API as feedback dashboard
           try {
-            const feedbackUrl = `http://localhost:8000/human-feedback/pending?workspace_id=${workspaceId}`
+            const feedbackUrl = `${getApiBaseUrl()}/human-feedback/pending?workspace_id=${workspaceId}`
             const response = await fetch(feedbackUrl)
             let feedbackData: any[] = []
             
@@ -1466,7 +1473,7 @@ export function useConversationalWorkspace(workspaceId: string, initialChatId?: 
           // Load knowledge-specific artifacts
           try {
             console.log('📚 [loadChatSpecificArtifacts] Fetching knowledge insights for workspace:', workspaceId)
-            const response = await fetch(`http://localhost:8000/api/conversation/workspaces/${workspaceId}/knowledge-insights`)
+            const response = await fetch(`${getApiBaseUrl()}/api/conversation/workspaces/${workspaceId}/knowledge-insights`)
             
             if (response.ok) {
               const knowledgeData = await response.json()
@@ -1543,7 +1550,7 @@ export function useConversationalWorkspace(workspaceId: string, initialChatId?: 
             console.log('🎯 [loadChatSpecificArtifacts] Auto-requesting tools from backend')
             // Automatically request tools from backend instead of showing empty artifact
             try {
-              const response = await fetch(`http://localhost:8000/api/conversation/workspaces/${workspaceId}/chat`, {
+              const response = await fetch(`${getApiBaseUrl()}/api/conversation/workspaces/${workspaceId}/chat`, {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',
@@ -1680,7 +1687,7 @@ export function useConversationalWorkspace(workspaceId: string, initialChatId?: 
               // First try to get the goal directly
               let fullGoalData = null
               try {
-                const goalResponse = await fetch(`http://localhost:8000/workspace-goals/${goalId}`)
+                const goalResponse = await fetch(`${getApiBaseUrl()}/workspace-goals/${goalId}`)
                 if (goalResponse.ok) {
                   fullGoalData = await goalResponse.json()
                   console.log('📊 [loadChatSpecificArtifacts] Full goal data loaded:', fullGoalData)
@@ -1716,8 +1723,8 @@ export function useConversationalWorkspace(workspaceId: string, initialChatId?: 
                 const allDeliverables = await api.monitoring.getGoalDeliverables(workspaceId, goalId)
                 
                 // 🎯 FIXED: Get completed tasks SPECIFIC to this goal (not all workspace tasks)
-                const tasksResponse = await fetch(`http://localhost:8000/api/monitoring/workspace/${workspaceId}/tasks?status=completed`)
-                const tasksData = await tasksResponse.json()
+                // 🔧 FIXED: Use api.monitoring instead of hardcoded localhost URL
+                const tasksData = await api.monitoring.getWorkspaceTasks(workspaceId, { status: 'completed' })
                 const allCompletedTasks = tasksData?.tasks || []
                 
                 // 🤖 AI-DRIVEN: Let the system handle goal-task relationships through the SDK
@@ -1867,7 +1874,7 @@ export function useConversationalWorkspace(workspaceId: string, initialChatId?: 
       const chatId = chat.systemType || chat.id
       console.log('📞 [loadFixedChatData] Fetching conversation history for:', chatId)
       
-      const response = await fetch(`http://localhost:8000/api/conversation/workspaces/${workspaceId}/history?chat_id=${chatId}&limit=50`)
+      const response = await fetch(`${getApiBaseUrl()}/api/conversation/workspaces/${workspaceId}/history?chat_id=${chatId}&limit=50`)
       
       if (response.ok) {
         const conversationHistory = await response.json()
@@ -1927,7 +1934,7 @@ export function useConversationalWorkspace(workspaceId: string, initialChatId?: 
     
     try {
       // First try to load from API
-      const response = await fetch(`http://localhost:8000/api/conversation/workspaces/${workspaceId}/history?chat_id=${chat.id}&limit=50`)
+      const response = await fetch(`${getApiBaseUrl()}/api/conversation/workspaces/${workspaceId}/history?chat_id=${chat.id}&limit=50`)
       
       if (response.ok) {
         const conversationHistory = await response.json()
@@ -1993,7 +2000,7 @@ export function useConversationalWorkspace(workspaceId: string, initialChatId?: 
               setSuggestedActions([])
               
               // Use the thinking endpoint to capture reasoning steps
-              const response = await fetch(`http://localhost:8000/api/conversation/workspaces/${workspaceId}/chat/thinking`, {
+              const response = await fetch(`${getApiBaseUrl()}/api/conversation/workspaces/${workspaceId}/chat/thinking`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
