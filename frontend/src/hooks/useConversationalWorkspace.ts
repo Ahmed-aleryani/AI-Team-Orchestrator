@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { api } from '@/utils/api'
 import { generateArtifactId, generateMessageId, validateUniqueIds } from '@/utils/uniqueId'
+import { getApiUrl, getWsUrl } from '@/utils/environment'
 import {
   ConversationMessage,
   Chat,
@@ -10,12 +11,9 @@ import {
   AIResponse
 } from '@/components/conversational/types'
 
-// 🔧 FIXED: Centralized API base URL - no more hardcoded localhost
-const getApiBaseUrl = () => process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
-const getWsBaseUrl = () => {
-  const apiUrl = getApiBaseUrl()
-  return apiUrl.replace(/^http/, 'ws')
-}
+// 🔧 CENTRALIZED: Use environment utility for API URLs
+const getApiBaseUrl = getApiUrl
+const getWsBaseUrl = getWsUrl
 
 export function useConversationalWorkspace(workspaceId: string, initialChatId?: string) {
   // 🎯 ARCHITECTURAL FIX: Stable navigation state to prevent re-initialization

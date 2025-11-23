@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react'
+import { getApiUrl } from '@/utils/environment'
 
-// 🔧 FIXED: Centralized API base URL - no more hardcoded localhost
-const getApiBaseUrl = () => process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+// 🔧 CENTRALIZED: Use environment utility for API URLs
+const getApiBaseUrl = getApiUrl
 
 interface DeliverableStatus {
   id: string

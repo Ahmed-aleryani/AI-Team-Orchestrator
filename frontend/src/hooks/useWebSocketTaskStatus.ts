@@ -2,10 +2,11 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { getApiUrl, getWsUrl } from '@/utils/environment'
 
-// 🔧 FIXED: Centralized API base URL - no more hardcoded localhost
-const getApiBaseUrl = () => process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
-const getWsBaseUrl = () => getApiBaseUrl().replace(/^http/, 'ws')
+// 🔧 CENTRALIZED: Use environment utility for API URLs
+const getApiBaseUrl = getApiUrl
+const getWsBaseUrl = getWsUrl
 
 interface TaskStatus {
   id: string
