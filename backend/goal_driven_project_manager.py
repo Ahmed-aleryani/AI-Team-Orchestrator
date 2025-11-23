@@ -209,7 +209,8 @@ class GoalDrivenProjectManager:
                 duration_hours = (updated - created).total_seconds() / 3600
                 total_hours += duration_hours
                 count += 1
-            except:
+            except (KeyError, ValueError, TypeError) as e:
+                logger.debug(f"Skipping task in completion time calc: {e}")
                 continue
         
         return round(total_hours / count, 1) if count > 0 else 0

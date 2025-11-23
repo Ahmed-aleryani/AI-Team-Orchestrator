@@ -804,8 +804,8 @@ class RobustJSONParser:
                         if key in parsed_details and parsed_details[key]:
                             content = str(parsed_details[key])[:100]
                             return f"Task {task_id}: {content}..."
-            except:
-                pass
+            except (json.JSONDecodeError, TypeError, KeyError):
+                pass  # Unable to extract summary from detailed results
         
         # Fallback based on status
         if status == "failed":

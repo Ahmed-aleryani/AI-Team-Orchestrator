@@ -812,8 +812,8 @@ async def _calculate_content_based_task_score(task_data: Dict[str, Any]) -> floa
                 detailed = json.loads(result['detailed_results_json']) if isinstance(result['detailed_results_json'], str) else result['detailed_results_json']
                 if detailed and len(detailed) > 2:
                     score += 20
-            except:
-                pass
+            except (json.JSONDecodeError, TypeError, ValueError):
+                pass  # Invalid JSON, skip bonus
         
         # Simple keyword analysis (minimal)
         summary_lower = summary.lower()

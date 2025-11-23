@@ -348,7 +348,8 @@ Return a JSON structure:
                 content_str = self._ensure_string_content(asset.get('content', ''))
                 sections.append(content_str)
                 sections.append("```\n")
-            except:
+            except (json.JSONDecodeError, TypeError, KeyError) as e:
+                logger.debug(f"Data parsing failed for asset: {e}")
                 sections.append("```")
                 content_str = self._ensure_string_content(asset.get('content', ''))
                 sections.append(content_str)

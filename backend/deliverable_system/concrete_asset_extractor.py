@@ -229,8 +229,8 @@ Return as JSON object with "assets" array. Focus on CONCRETE, SPECIFIC content -
                         'extraction_method': 'pattern',
                         'confidence': 0.9
                     })
-                except:
-                    pass  # Not valid JSON
+                except (json.JSONDecodeError, TypeError, ValueError):
+                    pass  # Not valid JSON, skip
             
             # AI-driven structured content extraction - replaced hard-coded patterns
             await self._ai_extract_structured_content(content, assets)
