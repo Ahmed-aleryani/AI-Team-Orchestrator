@@ -1027,8 +1027,8 @@ Return ONLY the category name that best fits this metric.
             # 🔄 PREVENTION: Add cooldown for failed task creation attempts
             try:
                 await self._add_corrective_task_cooldown(workspace_id, goal_id, f"creation_error: {str(e)}")
-            except:
-                pass
+            except Exception as cooldown_error:
+                logger.debug(f"Failed to add corrective task cooldown: {type(cooldown_error).__name__}")
             
             return {}
     

@@ -2551,11 +2551,11 @@ Original Task:
                     error_message="Task execution timeout (5 minutes exceeded)",
                     summary="Task was terminated due to timeout. Agent may be stuck in infinite loop."
                 )
-                # Reset agent status  
+                # Reset agent status
                 try:
                     await update_agent_status(str(agent_id), AgentStatus.IDLE.value)
-                except:
-                    pass
+                except Exception as status_error:
+                    logger.debug(f"Failed to reset agent status: {type(status_error).__name__}")
             except Exception as e:
                 # 🚦 Check if it's a rate limit error that wasn't handled
                 error_str = str(e).lower()
@@ -4234,12 +4234,9 @@ Original Task:
                         "updated_at": datetime.now().isoformat()
                     }
                     
-                    # Try to add status_reason, but don't fail if column doesn't exist
-                    try:
-                        update_data["status_reason"] = f"Auto-paused by circuit breaker: {reason}"
-                    except:
-                        pass
-                    
+                    # Add status_reason for tracking (column may not exist in old schemas)
+                    update_data["status_reason"] = f"Auto-paused by circuit breaker: {reason}"
+
                     update_result = supabase.table("workspaces").update(update_data).eq("id", workspace_id).execute()
                     
                     if update_result.data:
@@ -4285,12 +4282,12 @@ Original Task:
                 
                 # Filter by status_reason if field exists
                 auto_paused_workspaces = [
-                    ws for ws in result.data 
+                    ws for ws in result.data
                     if ws.get("status_reason", "").startswith("Auto-paused by circuit breaker")
                 ]
-            except:
+            except (KeyError, TypeError, AttributeError) as e:
                 # Fallback: if status_reason doesn't exist, resume ALL paused workspaces
-                logger.warning("status_reason field not available, resuming all paused workspaces")
+                logger.warning(f"status_reason field not available ({type(e).__name__}), resuming all paused workspaces")
                 result = supabase.table("workspaces").select("id").eq(
                     "status", WorkspaceStatus.PAUSED.value
                 ).execute()
@@ -4309,12 +4306,9 @@ Original Task:
                         "updated_at": datetime.now().isoformat()
                     }
                     
-                    # Try to add status_reason, but don't fail if column doesn't exist
-                    try:
-                        update_data["status_reason"] = "Auto-resumed after circuit breaker recovery"
-                    except:
-                        pass
-                    
+                    # Add status_reason for tracking
+                    update_data["status_reason"] = "Auto-resumed after circuit breaker recovery"
+
                     update_result = supabase.table("workspaces").update(update_data).eq("id", workspace["id"]).execute()
                     
                     if update_result.data:

@@ -534,8 +534,9 @@ class AgentManager:
                     try:
                         # Try parsing ISO format from database
                         processed[field] = datetime.fromisoformat(processed[field].replace('Z', '+00:00'))
-                    except:
+                    except (ValueError, AttributeError) as e:
                         # Fallback to current time if parsing fails
+                        logger.debug(f"Date parsing failed for {field}: {e}")
                         processed[field] = datetime.now(timezone.utc)
         
         # Ensure required fields exist
@@ -718,8 +719,9 @@ class AgentManager:
                 return formatted if formatted else f"   {content[:200]}...\n"
             else:
                 return f"   {content[:200]}...\n"
-        except:
-            # If not structured, just use first 200 chars
+        except (json.JSONDecodeError, KeyError, TypeError) as e:
+            # If not structured or parsing fails, just use first 200 chars
+            logger.debug(f"Content formatting fallback: {type(e).__name__}")
             return f"   {content[:200]}...\n"
     
     async def _store_execution_insights(self, task: Task, result: Any, relevant_insights: List[Dict[str, Any]]):

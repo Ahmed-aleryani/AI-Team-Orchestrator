@@ -558,8 +558,8 @@ class AssetDrivenDatabaseManager:
                 # Store enforcement log (if table exists)
                 try:
                     self.supabase.table("goal_enforcement_logs").insert(enforcement_log).execute()
-                except:
-                    logger.debug("Goal enforcement logs table not available - enforcement logged in memory")
+                except Exception as e:
+                    logger.debug(f"Goal enforcement logs table not available - enforcement logged in memory: {type(e).__name__}")
                 
                 logger.info(f"🚫 ZERO PROGRESS ENFORCED: Goal {goal_id} set to 0% - {reason}")
             
@@ -873,14 +873,16 @@ class AssetDrivenDatabaseManager:
                 req_count = self.supabase.table("goal_asset_requirements").select("id", count="exact").limit(1).execute()
                 art_count = self.supabase.table("asset_artifacts").select("id", count="exact").limit(1).execute()
                 health_status["checks"]["asset_tables"] = "healthy"
-            except:
+            except Exception as e:
+                logger.debug(f"Asset tables health check failed: {type(e).__name__}")
                 health_status["checks"]["asset_tables"] = "unhealthy"
-            
+
             # Test quality system
             try:
                 val_count = self.supabase.table("quality_validations").select("id", count="exact").limit(1).execute()
                 health_status["checks"]["quality_system"] = "healthy"
-            except:
+            except Exception as e:
+                logger.debug(f"Quality system health check failed: {type(e).__name__}")
                 health_status["checks"]["quality_system"] = "unhealthy"
             
             # Overall status

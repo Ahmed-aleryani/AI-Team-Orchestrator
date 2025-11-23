@@ -2133,7 +2133,8 @@ Your role: Remove barriers so specialists produce final, substantial deliverable
                 s_val_str = s_val_str.value  # if already enum, get value
             try:
                 agent_s["seniority"] = AgentSeniority(s_val_str.lower())
-            except:
+            except (ValueError, AttributeError):
+                # Invalid seniority value, default to JUNIOR
                 agent_s["seniority"] = AgentSeniority.JUNIOR
 
             # 🔧 FIX: Add estimated_monthly_cost for minimal fallback agents
