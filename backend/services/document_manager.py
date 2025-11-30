@@ -125,7 +125,8 @@ class DocumentManager:
                 if isinstance(existing_doc['text_chunks'], str):
                     try:
                         existing_doc['text_chunks'] = json.loads(existing_doc['text_chunks'])
-                    except:
+                    except (json.JSONDecodeError, ValueError) as e:
+                        logger.debug(f"Failed to parse text_chunks JSON: {type(e).__name__}")
                         existing_doc['text_chunks'] = None
             return DocumentMetadata(**existing_doc)
         

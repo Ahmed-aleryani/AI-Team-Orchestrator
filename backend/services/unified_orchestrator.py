@@ -359,7 +359,8 @@ class AIOptimizer:
                     updated = datetime.fromisoformat(task["updated_at"].replace('Z', '+00:00'))
                     completion_time = (updated - created).total_seconds() / 3600  # hours
                     times.append(completion_time)
-                except:
+                except (ValueError, TypeError, KeyError) as e:
+                    logger.debug(f"Failed to parse task timestamps: {type(e).__name__}")
                     continue
             
             return times

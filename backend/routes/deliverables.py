@@ -138,7 +138,8 @@ async def enhance_deliverables_with_display_content(deliverables: List[Dict[str,
                         'content_transformation_status': 'failed',
                         'content_transformation_error': 'Transformation timeout'
                     })
-                except:
+                except Exception as db_error:
+                    logger.debug(f"Failed to update deliverable status: {type(db_error).__name__}")
                     pass
                 return deliverable
             except Exception as e:
@@ -146,10 +147,11 @@ async def enhance_deliverables_with_display_content(deliverables: List[Dict[str,
                 # Mark as failed in database to avoid retrying
                 try:
                     await db_update_deliverable(deliverable.get('id'), {
-                        'content_transformation_status': 'failed', 
+                        'content_transformation_status': 'failed',
                         'content_transformation_error': str(e)
                     })
-                except:
+                except Exception as db_error:
+                    logger.debug(f"Failed to update deliverable status: {type(db_error).__name__}")
                     pass
                 return deliverable
         

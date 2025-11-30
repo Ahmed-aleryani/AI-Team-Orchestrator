@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import { getApiUrl } from '@/utils/environment'
 import UserFriendlyFeedbackDashboard from './UserFriendlyFeedbackDashboard'
 
 interface ProjectFeedbackPanelProps {
@@ -24,7 +25,7 @@ const ProjectFeedbackPanel: React.FC<ProjectFeedbackPanelProps> = ({
 
   const fetchPendingCount = async () => {
     try {
-      const response = await fetch(`http://localhost:8000/human-feedback/pending?workspace_id=${workspaceId}`)
+      const response = await fetch(`${getApiUrl()}/human-feedback/pending?workspace_id=${workspaceId}`)
       if (response.ok) {
         const data = await response.json()
         setPendingCount((data || []).length)  // Fix: API returns array directly, not wrapped in object

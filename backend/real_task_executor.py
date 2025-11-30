@@ -246,7 +246,8 @@ Format as structured JSON.
                     'type': output_type,
                     'generated_at': datetime.now().isoformat()
                 }
-        except:
+        except (json.JSONDecodeError, ValueError, AttributeError) as e:
+            logger.debug(f"Failed to parse JSON from AI output: {type(e).__name__}")
             pass
         
         # Fallback: estruttura il contenuto testuale

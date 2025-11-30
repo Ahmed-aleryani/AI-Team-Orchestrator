@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
+import { getApiUrl } from '@/utils/environment'
 import useGoalThinking from '@/hooks/useGoalThinking'
 
 interface ThinkingDebuggerProps {
@@ -39,7 +40,7 @@ export default function ThinkingDebugger({ goalId, workspaceId, deliverableTitle
   const handleTestDirectAPI = async () => {
     addDebug('Testing direct API call...')
     try {
-      const response = await fetch(`http://localhost:8000/api/thinking/workspace/${workspaceId}?limit=50`)
+      const response = await fetch(`${getApiUrl()}/api/thinking/workspace/${workspaceId}?limit=50`)
       addDebug(`Direct API response status: ${response.status}`)
       
       if (response.ok) {

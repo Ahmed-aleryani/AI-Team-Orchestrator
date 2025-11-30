@@ -166,7 +166,8 @@ Return ONLY a JSON array of tag strings, no explanation:
                 tags = response if isinstance(response, list) else (response.get('tags', []) if isinstance(response, dict) else json.loads(response))
                 if isinstance(tags, list):
                     return tags[:self.max_tags]
-            except:
+            except (json.JSONDecodeError, ValueError, TypeError, AttributeError) as e:
+                logger.debug(f"Failed to parse tags from response: {type(e).__name__}")
                 pass
             
             # Fallback to extracting from response

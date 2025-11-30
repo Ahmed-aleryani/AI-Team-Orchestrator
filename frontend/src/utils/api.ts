@@ -11,9 +11,9 @@ import {
   DirectorConfig,
   DirectorTeamProposal,
   Handoff,
-  FeedbackRequest, 
+  FeedbackRequest,
   FeedbackResponse,
-  ProjectDeliverables, 
+  ProjectDeliverables,
   DeliverableFeedback,
   ProjectDeliverablesExtended,
   ProjectOutputExtended,
@@ -21,6 +21,7 @@ import {
   CustomTool,
   CustomToolCreate,
 } from '@/types';
+import { getApiUrl } from '@/utils/environment';
 
 // 🆕 NEW: Asset Management Types
 export interface AssetRequirement {
@@ -112,21 +113,9 @@ export interface WorkspaceTasksResponse {
   last_updated: string;
 }
 
-// Determina l'URL base dell'API in base all'ambiente
-const getBaseUrl = () => {
-  // Controlla se il codice viene eseguito nel browser
-  if (typeof window !== 'undefined') {
-    // Se siamo in localhost, punta a localhost:8000 (main server)
-    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-      return 'http://localhost:8000';
-    }
-  }
-  
-  // Altrimenti usa l'URL configurato o il fallback
-  return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-};
-
-const API_BASE_URL = getBaseUrl();
+// Use centralized environment utility for API URL management
+// This ensures consistent URL handling across development and production
+const API_BASE_URL = getApiUrl();
 
 // Helper per gestire gli errori delle chiamate API
 const handleApiError = (error: unknown) => {
@@ -135,7 +124,7 @@ const handleApiError = (error: unknown) => {
 };
 
 export const api = {
-  getBaseUrl,
+  getBaseUrl: getApiUrl, // Re-export centralized utility for backward compatibility
   
   // 🆕 UNIFIED: Asset Management API (Updated to use unified-assets endpoints)
   assetManagement: {

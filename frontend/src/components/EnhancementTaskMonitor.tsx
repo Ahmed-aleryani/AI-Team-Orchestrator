@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import { getApiUrl } from '@/utils/environment'
 
 interface EnhancementTaskMonitorProps {
   workspaceId: string
@@ -37,7 +38,7 @@ const EnhancementTaskMonitor: React.FC<EnhancementTaskMonitorProps> = ({
 
   const fetchTaskStatus = async (id: string) => {
     try {
-      const response = await fetch(`http://localhost:8000/monitoring/task/${id}/status`)
+      const response = await fetch(`${getApiUrl()}/monitoring/task/${id}/status`)
       if (response.ok) {
         const task = await response.json()
         setTaskStatus(task)

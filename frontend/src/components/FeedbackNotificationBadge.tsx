@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import { getApiUrl } from '@/utils/environment'
 
 interface FeedbackNotificationBadgeProps {
   workspaceId: string
@@ -27,7 +28,7 @@ const FeedbackNotificationBadge: React.FC<FeedbackNotificationBadgeProps> = ({
 
   const fetchPendingCount = async () => {
     try {
-      const response = await fetch(`http://localhost:8000/human-feedback/pending?workspace_id=${workspaceId}`)
+      const response = await fetch(`${getApiUrl()}/human-feedback/pending?workspace_id=${workspaceId}`)
       if (response.ok) {
         const data = await response.json()
         const requests = data || []  // Fix: API returns array directly, not wrapped in object

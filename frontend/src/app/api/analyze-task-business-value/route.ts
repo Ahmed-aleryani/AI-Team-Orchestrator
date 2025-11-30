@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getApiUrl } from '@/utils/environment'
 
 export async function POST(request: NextRequest) {
   try {
     // Parse the request body
     const body = await request.json()
-    
-    // Forward the request to the FastAPI backend
-    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000'
+
+    // Forward the request to the FastAPI backend using centralized environment utility
+    const backendUrl = getApiUrl()
     const response = await fetch(`${backendUrl}/api/analyze-task-business-value`, {
       method: 'POST',
       headers: {

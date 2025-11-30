@@ -170,7 +170,8 @@ class SimpleConversationalAgent:
                     temperature=0
                 )
                 query_type = classification_response.choices[0].message.content.strip()
-            except:
+            except Exception as e:
+                logger.debug(f"Query classification failed: {type(e).__name__}")
                 query_type = "GENERAL_INQUIRY"  # Safe fallback
             
             # Determine processing approach based on AI classification
@@ -222,7 +223,8 @@ class SimpleConversationalAgent:
                     try:
                         import json
                         todo_list = json.loads(todo_list_raw)
-                    except:
+                    except (json.JSONDecodeError, ValueError) as e:
+                        logger.debug(f"Failed to parse todo list JSON: {type(e).__name__}")
                         # Fallback: create simple todo from text
                         todo_list = [
                             {"title": "Analyze request", "description": "Understanding user requirements", "status": "completed"},

@@ -60,11 +60,12 @@ Complete the assigned task efficiently and respond with this JSON format:
             # Parse result
             try:
                 result_data = json.loads(str(run_result.final_output))
-            except:
+            except (json.JSONDecodeError, ValueError) as e:
+                logger.debug(f"Failed to parse run result as JSON: {type(e).__name__}")
                 # Fallback if not valid JSON
                 result_data = {
                     "task_id": str(task.id),
-                    "status": "completed", 
+                    "status": "completed",
                     "summary": f"Task completed by {self.agent_data.role}",
                     "result": str(run_result.final_output)
                 }
@@ -91,5 +92,6 @@ Complete the assigned task efficiently and respond with this JSON format:
         finally:
             try:
                 await update_agent_status(str(self.agent_data.id), AgentStatus.AVAILABLE.value)
-            except:
+            except Exception as e:
+                logger.debug(f"Failed to update agent status: {type(e).__name__}")
                 pass

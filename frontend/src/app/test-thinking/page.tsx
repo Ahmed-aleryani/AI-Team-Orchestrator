@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { buildApiUrl, getApiUrl } from '@/utils/environment'
 import useWorkspaceThinking from '@/hooks/useWorkspaceThinking'
 
 export default function TestThinkingPage() {
@@ -24,7 +25,7 @@ export default function TestThinkingPage() {
     setManualFetchResult(null)
     
     try {
-      const url = `http://localhost:8000/api/thinking/workspace/${testWorkspaceId}?limit=10`
+      const url = `${getApiUrl()}/api/thinking/workspace/${testWorkspaceId}?limit=10`
       console.log('Manual fetch URL:', url)
       
       const response = await fetch(url, {

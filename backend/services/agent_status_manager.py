@@ -469,7 +469,8 @@ class AgentStatusManager:
         if agent_data.get("updated_at"):
             try:
                 last_activity = datetime.fromisoformat(agent_data["updated_at"].replace('Z', '+00:00'))
-            except:
+            except (ValueError, TypeError, AttributeError) as e:
+                logger.debug(f"Failed to parse agent updated_at timestamp: {type(e).__name__}")
                 pass
         
         return AgentInfo(
@@ -807,7 +808,8 @@ BEST AGENT ID:"""
             last_update = datetime.fromisoformat(updated_at.replace('Z', '+00:00'))
             hours_since_update = (datetime.now() - last_update).total_seconds() / 3600
             return hours_since_update > self.activity_timeout_minutes / 60
-        except:
+        except (ValueError, TypeError, AttributeError) as e:
+            logger.debug(f"Failed to parse updated_at for stale check: {type(e).__name__}")
             return True
     
     def _determine_stale_agent_status(self, agent_data: Dict) -> UnifiedAgentStatus:

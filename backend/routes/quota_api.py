@@ -203,7 +203,8 @@ async def quota_websocket_endpoint(websocket: WebSocket, workspace_id: Optional[
                 # Send ping to keep connection alive
                 try:
                     await websocket.send_text(json.dumps({"type": "ping"}))
-                except:
+                except (ConnectionError, RuntimeError) as e:
+                    logger.debug(f"WebSocket ping failed, connection dead: {type(e).__name__}")
                     break  # Connection is dead
                     
     except WebSocketDisconnect:

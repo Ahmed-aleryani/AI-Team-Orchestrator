@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import { getApiUrl } from '@/utils/environment'
 
 interface FeedbackRequest {
   id: string
@@ -46,8 +47,8 @@ const UserFriendlyFeedbackDashboard: React.FC<UserFriendlyFeedbackDashboardProps
   const fetchFeedbackRequests = async () => {
     try {
       const url = workspaceId 
-        ? `http://localhost:8000/human-feedback/pending?workspace_id=${workspaceId}`
-        : 'http://localhost:8000/human-feedback/pending'
+        ? `${getApiUrl()}/human-feedback/pending?workspace_id=${workspaceId}`
+        : '${getApiUrl()}/human-feedback/pending'
       
       const response = await fetch(url)
       if (response.ok) {
@@ -62,7 +63,7 @@ const UserFriendlyFeedbackDashboard: React.FC<UserFriendlyFeedbackDashboardProps
           
           for (const wsId of uniqueWorkspaceIds) {
             try {
-              const wsResponse = await fetch(`http://localhost:8000/api/workspaces/${wsId}`)
+              const wsResponse = await fetch(`${getApiUrl()}/api/workspaces/${wsId}`)
               if (wsResponse.ok) {
                 const wsData = await wsResponse.json()
                 workspaceNamesMap[wsId] = wsData.name || `Progetto ${wsId.slice(0, 8)}`
@@ -84,7 +85,7 @@ const UserFriendlyFeedbackDashboard: React.FC<UserFriendlyFeedbackDashboardProps
 
   const handleApprove = async (requestId: string, feedback?: string) => {
     try {
-      const response = await fetch(`http://localhost:8000/human-feedback/${requestId}/respond`, {
+      const response = await fetch(`${getApiUrl()}/human-feedback/${requestId}/respond`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -104,7 +105,7 @@ const UserFriendlyFeedbackDashboard: React.FC<UserFriendlyFeedbackDashboardProps
 
   const handleReject = async (requestId: string, reason: string) => {
     try {
-      const response = await fetch(`http://localhost:8000/human-feedback/${requestId}/respond`, {
+      const response = await fetch(`${getApiUrl()}/human-feedback/${requestId}/respond`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

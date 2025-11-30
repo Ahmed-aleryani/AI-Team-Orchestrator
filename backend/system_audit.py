@@ -192,7 +192,8 @@ class SystemAudit:
                             registered_services = data.get("total_services", 0)
                         if "active_services" in data:
                             registered_services = len(data.get("active_services", []))
-                    except:
+                    except (json.JSONDecodeError, ValueError, KeyError) as e:
+                        logger.debug(f"Failed to parse endpoint response data: {type(e).__name__}")
                         pass
                 
                 results[endpoint] = {
@@ -598,8 +599,8 @@ async def main():
         if response.status_code != 200:
             logger.error("❌ Server not responding properly")
             return False
-    except:
-        logger.error("❌ Server not accessible. Some network tests will be skipped")
+    except (requests.RequestException, ConnectionError, TimeoutError) as e:
+        logger.error(f"❌ Server not accessible ({type(e).__name__}). Some network tests will be skipped")
         # Continue with file system and import audits
     
     # Run complete audit

@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
+import { getApiUrl } from '@/utils/environment'
 
 interface FeedbackRequest {
   id: string
@@ -417,7 +418,7 @@ function RequestDetailModal({ request, onClose, onUpdate }: RequestDetailModalPr
   const handleApprove = async () => {
     try {
       setSubmitting(true)
-      const response = await fetch(`http://localhost:8000/human-feedback/${request.id}/respond`, {
+      const response = await fetch(`${getApiUrl()}/human-feedback/${request.id}/respond`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -455,7 +456,7 @@ function RequestDetailModal({ request, onClose, onUpdate }: RequestDetailModalPr
 
     try {
       setSubmitting(true)
-      const response = await fetch(`http://localhost:8000/human-feedback/${request.id}/respond`, {
+      const response = await fetch(`${getApiUrl()}/human-feedback/${request.id}/respond`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

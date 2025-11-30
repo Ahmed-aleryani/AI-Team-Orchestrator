@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { buildApiUrl, getApiUrl } from '@/utils/environment'
 
 export default function TestKnowledgeBasePage() {
   const [workspaces, setWorkspaces] = useState<any[]>([])
@@ -9,7 +10,7 @@ export default function TestKnowledgeBasePage() {
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    fetch('http://localhost:8000/api/workspaces/')
+    fetch('${getApiUrl()}/api/workspaces/')
       .then(res => res.json())
       .then(data => setWorkspaces(data))
       .catch(err => console.error('Failed to fetch workspaces:', err))

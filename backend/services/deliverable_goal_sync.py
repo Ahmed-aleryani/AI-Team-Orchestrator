@@ -351,7 +351,8 @@ class DeliverableGoalSyncService:
             if isinstance(metadata, str):
                 try:
                     metadata = json.loads(metadata)
-                except:
+                except (json.JSONDecodeError, ValueError) as e:
+                    logger.debug(f"Failed to parse deliverable metadata: {type(e).__name__}")
                     metadata = {}
             
             if metadata.get('goal_id') == goal['id']:
@@ -399,7 +400,8 @@ class DeliverableGoalSyncService:
             try:
                 score = float(result.get('response', '0.0'))
                 return max(0.0, min(1.0, score))
-            except:
+            except (ValueError, TypeError) as e:
+                logger.debug(f"Failed to parse AI matching score: {type(e).__name__}")
                 return 0.0
                 
         except Exception as e:

@@ -452,7 +452,8 @@ class UniversalLearningEngine:
                             parsed = json.loads(existing_content)
                             if parsed.get('content_hash') == content_hash:
                                 return True
-                        except:
+                        except (json.JSONDecodeError, ValueError) as e:
+                            logger.debug(f"Failed to parse existing insight content: {type(e).__name__}")
                             pass
             
             return False
@@ -587,9 +588,10 @@ class UniversalLearningEngine:
                                 prefix = "📊 MODERATE: "
                             else:
                                 prefix = "🔍 EXPLORATORY: "
-                            
+
                             actionable_learnings.append(f"{prefix}{learning}")
-                    except:
+                    except (json.JSONDecodeError, ValueError, AttributeError, KeyError) as e:
+                        logger.debug(f"Failed to parse learning content: {type(e).__name__}")
                         continue
             
             return actionable_learnings

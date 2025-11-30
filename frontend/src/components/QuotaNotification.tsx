@@ -6,6 +6,7 @@
  */
 
 import React, { useEffect, useState, useCallback } from 'react'
+import { getApiUrl } from '@/utils/environment'
 import { api } from '@/utils/api'
 
 interface QuotaNotification {

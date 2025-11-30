@@ -609,7 +609,8 @@ Respond with JSON:
                 return bool(value)
             else:
                 return value
-        except:
+        except (ValueError, TypeError, AttributeError) as e:
+            logger.debug(f"Type conversion failed for {target_type}: {type(e).__name__}, using default value")
             return self._get_default_value_for_type(target_type)
 
     def get_performance_metrics(self) -> Dict[str, Any]:

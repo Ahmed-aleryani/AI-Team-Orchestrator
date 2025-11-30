@@ -186,7 +186,8 @@ async def get_available_domains() -> Dict[str, Any]:
                 domain = content.get('domain_context')
                 if domain and domain != 'unknown':
                     detected_domains.add(domain)
-            except:
+            except (json.JSONDecodeError, ValueError, TypeError) as e:
+                logger.debug(f"Failed to parse insight content for domain detection: {type(e).__name__}")
                 continue
         
         # Convert to API format

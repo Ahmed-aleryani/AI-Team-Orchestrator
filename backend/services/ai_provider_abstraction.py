@@ -90,7 +90,8 @@ class OpenAISDKProvider(BaseProvider):
                     output_data = json.loads(result.data)
                     logger.info("✅ Real SDK call successful (JSON string format).")
                     return output_data
-                except:
+                except (json.JSONDecodeError, ValueError) as e:
+                    logger.debug(f"JSON parsing failed for result.data, using raw string: {type(e).__name__}")
                     logger.info("✅ Real SDK call successful (raw string format).")
                     return {"content": result.data}
             elif hasattr(result, 'content'):
@@ -100,7 +101,8 @@ class OpenAISDKProvider(BaseProvider):
                     output_data = json.loads(result.content)
                     logger.info("✅ Real SDK call successful (content JSON format).")
                     return output_data
-                except:
+                except (json.JSONDecodeError, ValueError) as e:
+                    logger.debug(f"JSON parsing failed for result.content, using raw string: {type(e).__name__}")
                     logger.info("✅ Real SDK call successful (content string format).")
                     return {"content": result.content}
             elif isinstance(result, str):
@@ -110,7 +112,8 @@ class OpenAISDKProvider(BaseProvider):
                     output_data = json.loads(result)
                     logger.info("✅ Real SDK call successful (raw JSON format).")
                     return output_data
-                except:
+                except (json.JSONDecodeError, ValueError) as e:
+                    logger.debug(f"JSON parsing failed for raw string result, using raw format: {type(e).__name__}")
                     logger.info("✅ Real SDK call successful (raw string format).")
                     return {"content": result}
             elif isinstance(result, dict):
@@ -146,7 +149,8 @@ class OpenAISDKProvider(BaseProvider):
                                 output_data = json.loads(fixed_json)
                                 logger.info("✅ Fixed and parsed JSON from markdown format.")
                                 return output_data
-                            except:
+                            except (json.JSONDecodeError, ValueError) as e:
+                                logger.debug(f"JSON fixing failed for markdown format: {type(e).__name__}")
                                 pass
                     
                     # Try parsing the whole thing as JSON
@@ -168,8 +172,8 @@ class OpenAISDKProvider(BaseProvider):
                             output_data = json.loads(fixed_output)
                             logger.info("✅ Fixed and parsed RunResult final_output as JSON.")
                             return output_data
-                        except:
-                            logger.info("✅ RunResult final_output as string (JSON parsing failed).")
+                        except (json.JSONDecodeError, ValueError) as e:
+                            logger.info(f"✅ RunResult final_output as string (JSON parsing failed: {type(e).__name__}).")
                             return {"content": final_output}
                 else:
                     return {"content": str(final_output)}

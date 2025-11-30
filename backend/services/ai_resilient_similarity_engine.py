@@ -601,8 +601,9 @@ Respond with JSON:
                 return 0.5
             else:
                 return 0.0
-                
-        except:
+
+        except (ValueError, TypeError, AttributeError, KeyError) as e:
+            logger.debug(f"Failed to calculate time similarity: {type(e).__name__}")
             return 0.0
 
     def _generate_cache_key(self, task1: Dict[str, Any], task2: Dict[str, Any]) -> str:

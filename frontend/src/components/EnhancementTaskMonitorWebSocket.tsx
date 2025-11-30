@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import { getApiUrl } from '@/utils/environment'
 import { useWebSocketTaskStatus } from '../hooks/useWebSocketTaskStatus'
 
 interface EnhancementTaskMonitorProps {
@@ -57,7 +58,7 @@ const EnhancementTaskMonitorWebSocket: React.FC<EnhancementTaskMonitorProps> = (
 
   const fetchInitialTaskData = async (id: string) => {
     try {
-      const response = await fetch(`http://localhost:8000/monitoring/task/${id}/status`)
+      const response = await fetch(`${getApiUrl()}/monitoring/task/${id}/status`)
       if (response.ok) {
         const task = await response.json()
         setInitialTaskData(task)

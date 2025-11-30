@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { getApiUrl } from '@/utils/environment'
 import { Card, Progress, Badge, Button, Tooltip } from 'antd';
+import { getApiUrl } from '@/utils/environment'
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, 
   ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line 

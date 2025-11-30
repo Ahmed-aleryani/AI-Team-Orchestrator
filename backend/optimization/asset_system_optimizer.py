@@ -184,7 +184,8 @@ class AssetSystemOptimizer:
             try:
                 await self.db_manager.get_workspace_asset_requirements(test_workspace_id)
                 query_metrics["asset_requirements_query_ms"] = (time.time() - start_time) * 1000
-            except:
+            except Exception as e:
+                logger.debug(f"Asset requirements query failed: {type(e).__name__}")
                 query_metrics["asset_requirements_query_ms"] = 0
             
             # Test quality validation queries
@@ -192,7 +193,8 @@ class AssetSystemOptimizer:
             try:
                 await self.db_manager.get_recent_quality_validations(test_workspace_id, limit=10)
                 query_metrics["quality_validations_query_ms"] = (time.time() - start_time) * 1000
-            except:
+            except Exception as e:
+                logger.debug(f"Quality validations query failed: {type(e).__name__}")
                 query_metrics["quality_validations_query_ms"] = 0
             
             # Estimate operations per second based on recent queries

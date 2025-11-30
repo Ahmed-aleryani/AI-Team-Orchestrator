@@ -209,7 +209,8 @@ class DynamicAntiLoopManager:
                         created_time = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
                         if datetime.now().replace(tzinfo=created_time.tzinfo) - created_time < timedelta(hours=2):
                             return True
-                    except:
+                    except (ValueError, TypeError) as e:
+                        logger.debug(f"Failed to parse created_at timestamp: {type(e).__name__}")
                         pass
             
             return False
@@ -234,7 +235,8 @@ class DynamicAntiLoopManager:
                     wait_time = (datetime.now().replace(tzinfo=created_time.tzinfo) - created_time).total_seconds() / 60
                     total_wait += wait_time
                     valid_tasks += 1
-                except:
+                except (ValueError, TypeError) as e:
+                    logger.debug(f"Failed to parse created_at for wait time calculation: {type(e).__name__}")
                     continue
         
         return total_wait / valid_tasks if valid_tasks > 0 else 0.0

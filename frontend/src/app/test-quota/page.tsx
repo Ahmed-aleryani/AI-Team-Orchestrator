@@ -1,6 +1,7 @@
 'use client'
 
 import { useQuotaMonitor } from '@/hooks/useQuotaMonitor'
+import { buildApiUrl, getApiUrl } from '@/utils/environment'
 import { useEffect, useState } from 'react'
 
 // Progress bar component with minimal design
@@ -310,7 +311,7 @@ export default function TestQuotaPage() {
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
           <h3 className="text-sm font-medium text-blue-900 mb-2">System Information</h3>
           <div className="text-sm text-blue-700 space-y-1">
-            <p>API URL: {process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}</p>
+            <p>API URL: {process.env.NEXT_PUBLIC_API_URL || '${getApiUrl()}'}</p>
             <p>WebSocket URL: {process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8000'}</p>
             <p>Auto-refresh: Every 10 seconds</p>
             <p>Real-time updates: {isConnected ? 'Enabled' : 'Disabled'}</p>

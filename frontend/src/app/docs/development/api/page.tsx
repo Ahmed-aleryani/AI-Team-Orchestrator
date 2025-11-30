@@ -54,16 +54,21 @@ export default function APIPage() {
                   
                   <div className="bg-blue-50 rounded-lg p-6 border border-blue-200 mb-6">
                     <h3 className="font-medium text-blue-900 mb-3">Base URL</h3>
-                    <div className="bg-gray-900 rounded-lg p-3">
+                    <div className="bg-gray-900 rounded-lg p-3 mb-3">
                       <div className="flex items-center justify-between">
                         <code className="text-green-400">http://localhost:8000/api</code>
-                        <button 
+                        <button
                           onClick={() => copyToClipboard('http://localhost:8000/api')}
                           className="text-gray-400 hover:text-white transition-colors"
                         >
                           <Copy className="w-4 h-4" />
                         </button>
                       </div>
+                    </div>
+                    <div className="bg-yellow-50 rounded-lg p-3 border border-yellow-300">
+                      <p className="text-yellow-900 text-sm">
+                        <strong>⚠️ For Frontend Code:</strong> Never hardcode this URL. Use the centralized environment utility: <code className="bg-white px-2 py-0.5 rounded">{'import { buildApiUrl, getApiUrl } from "@/utils/environment"'}</code>
+                      </p>
                     </div>
                   </div>
 

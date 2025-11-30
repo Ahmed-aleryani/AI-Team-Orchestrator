@@ -291,7 +291,8 @@ class OpenAIUsageAPIClient:
                         error_data = response.json()
                         error_detail = error_data.get('error', {}).get('message', response.text)
                         error_msg = f"{error_msg} - {error_detail}"
-                    except:
+                    except (json.JSONDecodeError, ValueError) as e:
+                        logger.debug(f"Failed to parse error response: {type(e).__name__}")
                         error_msg = f"{error_msg} - {response.text}"
                     
                     logger.error(f"❌ {error_msg}")

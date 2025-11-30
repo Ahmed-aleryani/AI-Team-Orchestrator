@@ -188,11 +188,12 @@ async def get_workspace_artifacts(workspace_id: UUID, request: Request):
                 .select("*") \
                 .eq("workspace_id", str(workspace_id)) \
                 .execute()
-        except:
+        except Exception as e:
             # Fallback to requirements join if workspace_id column doesn't exist
+            logger.debug(f"Falling back to requirements join for artifacts: {type(e).__name__}")
             artifacts_response = supabase.table("asset_artifacts") \
                 .select("""
-                    *, 
+                    *,
                     goal_asset_requirements!inner(
                         workspace_goals!inner(workspace_id)
                     )

@@ -1,17 +1,5 @@
 import { useState, useCallback } from 'react';
-
-// Get API base URL function (copied from api.ts)
-const getApiBaseUrl = () => {
-  if (typeof window !== 'undefined') {
-    // Se siamo in localhost, punta a localhost:8000 (main server)
-    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-      return 'http://localhost:8000';
-    }
-  }
-  
-  // Altrimenti usa la variabile d'ambiente
-  return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-};
+import { getApiUrl } from '@/utils/environment';
 
 interface ExtractedGoal {
   id: string;
@@ -98,7 +86,7 @@ export function useGoalPreview(workspaceId: string) {
     const progressMonitor = startProgressMonitoring();
 
     try {
-      const apiBaseUrl = getApiBaseUrl();
+      const apiBaseUrl = getApiUrl();
       const url = `${apiBaseUrl}/api/workspaces/${workspaceId}/goals/preview`;
       
       // Production: removed debug logging
@@ -238,7 +226,7 @@ export function useGoalPreview(workspaceId: string) {
     const interval = setInterval(async () => {
       try {
         // Check real backend progress
-        const apiBaseUrl = getApiBaseUrl();
+        const apiBaseUrl = getApiUrl();
         const progressResponse = await fetch(`${apiBaseUrl}/api/workspaces/${workspaceId}/goals/progress`);
         
         if (progressResponse.ok) {
@@ -319,7 +307,7 @@ export function useGoalPreview(workspaceId: string) {
     setIsLoading(true);
 
     try {
-      const apiBaseUrl = getApiBaseUrl();
+      const apiBaseUrl = getApiUrl();
       const url = `${apiBaseUrl}/api/workspaces/${workspaceId}/goals/confirm`;
       
       const response = await fetch(url, {

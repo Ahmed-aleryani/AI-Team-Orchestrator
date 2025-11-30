@@ -795,7 +795,8 @@ Return specific, quantified insights where possible."""
                         try:
                             parsed_content = json.loads(existing_content)
                             existing_learning = parsed_content.get('learning', '')
-                        except:
+                        except (json.JSONDecodeError, ValueError) as e:
+                            logger.debug(f"Failed to parse existing insight content: {type(e).__name__}")
                             existing_learning = existing_content
                     elif isinstance(existing_content, dict):
                         existing_learning = existing_content.get('learning', str(existing_content))
@@ -895,9 +896,10 @@ Return specific, quantified insights where possible."""
                                 prefix = "📊 MODERATE CONFIDENCE: "
                             else:
                                 prefix = "🔍 EXPLORATORY: "
-                            
+
                             actionable_learnings.append(f"{prefix}{learning}")
-                    except:
+                    except (json.JSONDecodeError, ValueError, AttributeError, KeyError) as e:
+                        logger.debug(f"Failed to parse learning content: {type(e).__name__}")
                         continue
             
             return actionable_learnings

@@ -62,9 +62,11 @@ class AIJSONParser:
                     try:
                         json.loads(test_content)
                         return test_content
-                    except:
+                    except (json.JSONDecodeError, ValueError) as e:
+                        logger.debug(f"JSON validation failed at position {i}: {type(e).__name__}")
                         continue
-        except:
+        except Exception as e:
+            logger.debug(f"Error in JSON repair logic: {type(e).__name__}")
             pass
         
         # 🔧 FIX: Try to complete common incomplete patterns

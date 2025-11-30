@@ -128,7 +128,8 @@ class WorkspacePauseManager:
                         created_time = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
                         if datetime.now().replace(tzinfo=created_time.tzinfo) - created_time < timedelta(hours=2):
                             return True
-                    except:
+                    except (ValueError, TypeError) as e:
+                        logger.debug(f"Failed to parse created_at timestamp: {type(e).__name__}")
                         pass
             
             return False
@@ -258,7 +259,8 @@ class WorkspacePauseManager:
             paused_at_str = workspace.get('updated_at', datetime.now().isoformat())
             try:
                 paused_at = datetime.fromisoformat(paused_at_str.replace('Z', '+00:00'))
-            except:
+            except (ValueError, TypeError, AttributeError) as e:
+                logger.debug(f"Failed to parse paused_at timestamp: {type(e).__name__}")
                 paused_at = datetime.now().replace(tzinfo=None)
             
             pause_duration = datetime.now().replace(tzinfo=paused_at.tzinfo) - paused_at
@@ -361,7 +363,8 @@ class WorkspacePauseManager:
             # Add recovery reason if possible
             try:
                 update_data["status_reason"] = f"Auto-recovered: {recovery_info.critical_tasks_count} critical, {recovery_info.pending_tasks_count} pending (score: {recovery_info.recovery_score:.1f})"
-            except:
+            except (AttributeError, KeyError) as e:
+                logger.debug(f"Failed to format recovery reason: {type(e).__name__}")
                 pass
             
             result = supabase.table('workspaces').update(update_data).eq('id', workspace_id).execute()

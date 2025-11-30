@@ -2,6 +2,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { getApiUrl } from '@/utils/environment'
 import type { ActionableAsset } from '@/types';
 import StructuredAssetRenderer from './StructuredAssetRenderer';
 import GenericArrayViewer from './GenericArrayViewer';
@@ -80,7 +81,7 @@ const SmartAssetViewer: React.FC<SmartAssetViewerProps> = ({
 
       console.log('📤 [SmartAssetViewer] Sending refinement request:', refinementPayload);
       
-      const response = await fetch(`http://localhost:8000/improvement/asset-refinement/${taskId}`, {
+      const response = await fetch(`${getApiUrl()}/improvement/asset-refinement/${taskId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(refinementPayload)

@@ -203,7 +203,8 @@ def parse_llm_json_robust_pydantic(
                 data = json.loads(json_match.group(1))
                 validated = expected_model(**data)
                 return validated.dict(), True, "pydantic_markdown_extract"
-            except:
+            except (json.JSONDecodeError, ValueError, ValidationError) as e:
+                logger.debug(f"Failed to parse/validate markdown JSON: {type(e).__name__}")
                 pass
     except ValidationError as e:
         logger.warning(f"Pydantic validation failed: {e}")
@@ -217,7 +218,8 @@ def parse_llm_json_robust_pydantic(
     try:
         validated = expected_model(**fallback_data)
         return validated.dict(), False, "pydantic_fallback"
-    except:
+    except (ValidationError, TypeError, ValueError) as e:
+        logger.debug(f"Fallback validation failed: {type(e).__name__}")
         return fallback_data, False, "raw_fallback"
 
 class SpecialistAgent:

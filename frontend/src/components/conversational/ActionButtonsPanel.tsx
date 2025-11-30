@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
+import { buildApiUrl } from '@/utils/environment'
 
 interface SuggestedAction {
   tool: string
@@ -42,8 +43,8 @@ export default function ActionButtonsPanel({
 
     try {
       console.log('🔧 [ActionButtonsPanel] Executing action:', action.tool)
-      
-      const response = await fetch(`http://localhost:8000/api/conversation/workspaces/${workspaceId}/execute-action`, {
+
+      const response = await fetch(buildApiUrl(`/conversation/workspaces/${workspaceId}/execute-action`), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

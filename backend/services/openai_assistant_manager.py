@@ -489,8 +489,8 @@ class OpenAIAssistantManager:
                     thread = self.client.beta.threads.retrieve(thread_id)
                     logger.info(f"Using existing thread {thread_id} for workspace {workspace_id}")
                     return thread_id
-                except:
-                    logger.warning(f"Thread {thread_id} no longer exists, creating new one")
+                except Exception as e:
+                    logger.warning(f"Thread {thread_id} no longer exists, creating new one: {type(e).__name__}")
             
             # Create new thread
             thread = await self.create_thread(workspace_id)

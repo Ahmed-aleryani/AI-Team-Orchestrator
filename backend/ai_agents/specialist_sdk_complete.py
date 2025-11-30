@@ -478,7 +478,8 @@ Final output format:
                     summary = fallback_result_data.get("summary", summary)
                     if not structured_content:
                         structured_content = json.dumps(fallback_result_data, indent=2)
-            except:
+            except (json.JSONDecodeError, ValueError) as e:
+                logger.debug(f"Failed to parse result content as JSON: {type(e).__name__}")
                 pass
             
             # Ensure result_content is always a string
@@ -523,7 +524,8 @@ Final output format:
         finally:
             try:
                 await update_agent_status(str(self.agent_data.id), AgentStatus.AVAILABLE.value)
-            except:
+            except Exception as e:
+                logger.debug(f"Failed to update agent status: {type(e).__name__}")
                 pass
     
     def as_tool(self, tool_name: str = None, tool_description: str = None, max_turns: int = 3):

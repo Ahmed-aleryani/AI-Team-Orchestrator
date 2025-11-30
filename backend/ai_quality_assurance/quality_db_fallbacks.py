@@ -121,7 +121,8 @@ async def update_goal_progress(goal_id: UUID, progress_data: Dict[str, Any]) -> 
         from database import update_goal
         # Use update_goal as a fallback
         return await update_goal(str(goal_id), progress_data)
-    except:
+    except (ImportError, ModuleNotFoundError, AttributeError) as e:
+        logger.debug(f"Failed to import/use update_goal: {type(e).__name__}")
         # Ultimate fallback
         logger.info(f"Goal progress updated (fallback): {goal_id}")
         return True

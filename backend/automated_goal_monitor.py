@@ -1322,7 +1322,8 @@ Always focus on actionable deliverables.""",
                     "updated_at": datetime.now().isoformat()
                 }).eq("id", workspace_id).execute()
                 logger.info(f"🔓 Reset workspace {workspace_id} status after error")
-            except:
+            except Exception as db_error:
+                logger.debug(f"Failed to reset workspace status: {type(db_error).__name__}")
                 pass
             
             return {

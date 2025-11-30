@@ -247,7 +247,8 @@ class SystemTelemetryMonitor:
                     created_at = datetime.fromisoformat(task['created_at'].replace('Z', '+00:00'))
                     wait_time = (datetime.now().replace(tzinfo=created_at.tzinfo) - created_at).total_seconds() / 60
                     total_wait += wait_time
-                except:
+                except (ValueError, TypeError, KeyError) as e:
+                    logger.debug(f"Failed to parse task created_at for wait time: {type(e).__name__}")
                     continue
             
             avg_wait_time = total_wait / len(pending_tasks) if pending_tasks else 0.0
